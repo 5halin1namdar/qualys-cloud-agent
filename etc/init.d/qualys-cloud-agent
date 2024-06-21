@@ -1,0 +1,105 @@
+#!/bin/sh
+# chkconfig: 35 99 01
+# description: Qualys Cloud Agent
+#
+# processname: qualys-cloud-agent
+# config: /etc/qualys/cloud-agent/qualys-cloud-agent.conf
+# pidfile: /var/run/qualys-cloud-agent.pid
+
+# Source function library
+# RHEL/CentOS
+[ -f "/etc/init.d/functions" ] && . /etc/init.d/functions
+# Fedora
+[ -f "/etc/rc.d/init.d/functions" ] && . /etc/rc.d/init.d/functions
+# Suse
+[ -f "/etc/rc.status" ] && . /etc/rc.status
+prog=qualys-cloud-agent
+
+RETVAL=0
+
+INSTALL_DIR=/usr/local/qualys/cloud-agent
+BIN_PATH=${INSTALL_DIR}/bin
+PROG_PATH=${BIN_PATH}/$prog
+
+qAgentPid=`ps -ef|grep -E "(^|\s)$PROG_PATH($|\s)"|grep -v grep|awk -F' ' '{print $2}'`
+
+PATH=$PATH:/bin:/usr/sbin:/usr/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/sbin 
+export PATH
+
+exec=${BIN_PATH}/qualys-cloud-agent
+pidfile=/var/run/qualys-cloud-agent.pid
+
+[ -f "/etc/environment" ] && . "/etc/environment"
+[ -f "/etc/sysconfig/$prog" ] && . "/etc/sysconfig/$prog"
+
+export https_proxy
+export https_port
+export qualys_https_proxy
+export qualys_https_tls_proxy
+
+start() {
+    [ -x $exec ] || exit 5
+    echo -n "Starting $prog"
+    
+    daemon $exec --daemon
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && /sbin/pidof $prog > $pidfile
+    return $RETVAL
+}
+
+stop() {
+    echo -n "Stopping $prog"
+    /sbin/pidof $prog > $pidfile
+#check for the saved pid of qualys-cloud-agent in qAgentPid, 
+#if it does not appear in status response, consider it as stopped
+    [ ! -z "$qAgentPid" ] && killproc -p $pidfile $exec -TERM && while service $prog status | grep -q $qAgentPid; do sleep 1;done
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && rm -f $pidfile
+    return $RETVAL
+}
+
+restart() {
+    stop
+    rh_status_q && sleep 5
+    start
+}
+
+reload() {
+    restart
+}
+
+rh_status() {
+    # run checks to determine if the service is running or use generic status
+    if [ -s $pidfile ] 
+    then
+    /sbin/pidof $prog > $pidfile
+    fi
+    status $prog
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+        ;;
+    stop)
+        rh_status_q || exit 0
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    status)
+        rh_status
+        ;;
+     *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 2
+esac
+exit $?

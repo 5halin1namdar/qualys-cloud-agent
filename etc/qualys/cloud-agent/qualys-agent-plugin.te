@@ -1,0 +1,20 @@
+module qualys-agent-plugin 1.0;
+
+require {
+	type audisp_t;
+	type qualys_sock_dir_t;
+	attribute file_type, non_security_file_type;
+	class dir { add_name read write getattr search remove_name };
+	class unix_stream_socket { ioctl read getattr lock write setattr append bind connect getopt setopt shutdown create listen accept };
+	class sock_file { create unlink };
+	class capability { dac_override dac_read_search };
+}
+
+type qualys_sock_dir_t;
+typeattribute qualys_sock_dir_t file_type, non_security_file_type;
+
+#============= audisp_t ==============
+allow audisp_t qualys_sock_dir_t:dir { add_name read write getattr search remove_name };
+allow audisp_t qualys_sock_dir_t:unix_stream_socket { ioctl read getattr lock write setattr append bind connect getopt setopt shutdown create listen accept };
+allow audisp_t qualys_sock_dir_t:sock_file { create unlink };
+allow audisp_t self:capability { dac_override dac_read_search };

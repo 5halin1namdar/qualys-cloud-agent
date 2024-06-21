@@ -1,0 +1,6 @@
+[Unit]
+Description=Qualys cloud agent uninstall
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rpm -ev qualys-cloud-agent

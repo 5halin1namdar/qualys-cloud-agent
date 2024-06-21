@@ -1,0 +1,100 @@
+#!/bin/sh
+### BEGIN INIT INFO
+#Provides:              qualys-cloud-daemon
+#Required-Start:
+#Required-Stop:
+#Default-Start:         3  5
+# Default-Stop:         0 1 2 4 6
+#Short-Description:     Qualys cloud agent
+#Description:           Init script for Qualys cloud agent
+### END INIT INFO
+
+# processname: qualys-cloud-agent
+# config: /etc/qualys/cloud-agent/qualys-cloud-agent.conf
+# pidfile: /var/run/qualys-cloud-agent.pid
+
+# Using the lsb functions to perform the operations.
+. /lib/lsb/init-functions
+. /etc/rc.status
+
+INSTALL_DIR=/usr/local/qualys/cloud-agent
+BIN_PATH=${INSTALL_DIR}/bin
+
+prog=qualys-cloud-agent
+exec=${BIN_PATH}/qualys-cloud-agent
+pidfile=/var/run/qualys-cloud-agent.pid
+
+[ -f "/etc/environment" ] && . "/etc/environment"
+[ -f "/etc/sysconfig/$prog" ] && . "/etc/sysconfig/$prog"
+
+export https_proxy
+export https_port
+export qualys_https_proxy
+export qualys_https_tls_proxy
+
+# If the daemon is not there, then exit.
+test -x $exec || exit 5
+
+start() {
+    [ -x $exec ] || exit 5
+    echo -n "Starting $prog: "
+    rm -f $pidfile
+    start_daemon $exec --daemon
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && /bin/pidof $exec > $pidfile
+    return $RETVAL
+}
+
+stop() {
+    echo -n "Stopping $prog: "
+    /sbin/pidof $exec > $pidfile
+    killproc -p $pidfile $exec -TERM
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && rm -f $pidfile
+    return $RETVAL
+}
+
+restart() {
+    rh_status_q && stop
+    rh_status_q && sleep 5
+    start
+}
+
+reload() {
+    restart
+}
+
+rh_status() {
+    # run checks to determine if the service is running or use generic status
+    /sbin/pidof $exec > $pidfile
+    /sbin/checkproc -p $pidfile $exec 
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+	rc_status -v
+        ;;
+    stop)
+        rh_status_q && $1 && rc_status -v
+        ;;
+    restart)
+        $1
+        ;;
+    status)
+	echo -n "Checking for service qualys-cloud-agent "
+        rh_status
+        rc_status -v
+        ;;
+     *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 2
+esac
+exit $?

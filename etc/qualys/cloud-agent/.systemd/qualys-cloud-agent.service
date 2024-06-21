@@ -1,0 +1,15 @@
+[Unit]
+Description=Qualys cloud agent daemon
+After=network.service
+
+[Service]
+EnvironmentFile=-/etc/environment
+EnvironmentFile=-/etc/default/qualys-cloud-agent
+EnvironmentFile=-/etc/sysconfig/qualys-cloud-agent
+ExecStart=/usr/local/qualys/cloud-agent/bin/qualys-cloud-agent
+Restart=on-failure
+RestartSec=60s
+TimeoutStopSec=90s
+
+[Install]
+WantedBy=multi-user.target
